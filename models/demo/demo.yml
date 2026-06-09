@@ -20,10 +20,28 @@ models:
           - salary_check
   - name: customer
     description: "DBT Model for the customer table"
+    columns:
+      - name: CUSTOMER_ID
+        description: "Primary key — one row per customer."
+      - name: EMAIL
+        description: "Customer email address."
+      - name: COUNTRY
+        description: "Customer country (free text from source)."
+      - name: INSERT_DTS
+        description: "{{ doc('insert_dts') }}"
   - name: customer_vw
     description: "DBT Model for the customer view"
   - name: sales
     description: "DBT model for the sales table"
+    columns:
+      - name: CUSTOMER_ID
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('customer')
+                # refer to customer table - another data model
+                field: CUSTOMER_ID
+                # looking at CUSTOMER_ID, anything inside sales should have a valid customer
   - name: product
     description: "DBT Model for the product table"
   - name: purchase
@@ -48,8 +66,17 @@ sources:
   - name: customer
     database: PC_DBT_DB
     schema: PUBLIC
+    loaded_at_field: CREATED_AT
+    freshness:
+      warn_after: {count: 12, period: hour}
+      error_after: {count: 24, period: hour}
     tables:
       - name: CUSTOMER_SRC
+        columns:
+          - name: CUSTOMER_ID
+            data_tests:
+              - unique
+              - not_null
   - name: sales
     database: PC_DBT_DB
     schema: PUBLIC
